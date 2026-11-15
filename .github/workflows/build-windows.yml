@@ -1,0 +1,43 @@
+name: Build Windows EXE
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Tesseract OCR
+        shell: powershell
+        run: |
+          choco install tesseract --yes --no-progress
+          $tesseract = "C:\Program Files\Tesseract-OCR"
+          if (!(Test-Path "$tesseract\tesseract.exe")) { throw "Tesseract executable not found" }
+          if (!(Test-Path "$tesseract\tessdata\eng.traineddata")) { throw "English OCR data not found" }
+      - name: Install Python build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt pyinstaller
+      - name: Build standalone EXE
+        shell: powershell
+        run: |
+          $tesseract = "C:\Program Files\Tesseract-OCR"
+          pyinstaller --noconfirm --clean --onefile --windowed --name PrestigePriceCollector --collect-all pynput --collect-all mss --collect-all pyautogui --collect-all pytesseract --add-binary "$tesseract\tesseract.exe;tesseract" --add-data "$tesseract\tessdata;tesseract\tessdata" app.py
+      - name: Upload EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: Prestige-Price-Collector-Windows
+          path: dist/PrestigePriceCollector.exe
+          if-no-files-found: error
+          retention-days: 30
