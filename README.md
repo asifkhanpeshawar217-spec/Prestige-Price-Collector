@@ -1,71 +1,39 @@
 # Prestige Price Collector
 
-A standalone Windows desktop companion for collecting **real in-game prestige prices** and exporting them for the separate [Prestige Calculator mod](https://github.com/asifkhanpeshawar217-spec/Prestige-calc).
+A standalone Windows desktop app that scans the visible Minecraft prestige menu. It is separate from the Fabric mod.
 
-## Planned workflow
+## What it does
 
-1. Open Minecraft and navigate to the server's `/prestige` GUI.
-2. Run Prestige Price Collector separately.
-3. The collector reads visible game text using screen capture and OCR (no Fabric mod or Minecraft code injection).
-4. It records only prices it can actually read. It never invents prices from a pattern.
-5. Export `prestige_prices.json` and import that file into the Minecraft mod.
-
-## Current development status
-
-This repository is the **standalone collector project**. The first milestone is the desktop OCR prototype and price-data format. Reliable unattended scanning still needs calibration against screenshots of the actual Minecraft GUI: item-grid positions, tooltip placement, and the Next-page control vary with GUI scale and screen resolution.
-
-The confirmed maximum-prestige pattern is used only to identify expected/missing entries, never to calculate missing prices:
-
-- RB0–RB6: max prestige = `75 + 25 × RB`
-- RB7 onward: max prestige = `300 + 50 × (RB - 7)`
-
-Expected entries are P2 through the maximum prestige for each rebirth.
+- F8 calibration learns the center of the top-left slot and the bottom-right Next-page arrow.
+- Uses the **9 columns × 6 rows** menu layout shown in the screenshots.
+- Hovers each menu slot, reads the tooltip with OCR, and saves only prices it actually reads.
+- Clicks Next and repeats while the menu visibly changes.
+- Autosaves `prestige_prices.json`; supports JSON import and export.
+- Stores individual cost and bracketed cumulative spent separately. It never estimates missing prices.
 
 ## Requirements
 
-- Windows 10/11
-- Python 3.10+ for running from source
-- Tesseract OCR installed and available on PATH
-- Minecraft must remain open and visible during screen reading
+- Windows 10/11, Python 3.10+, and Tesseract OCR.
+- Install Tesseract from https://github.com/UB-Mannheim/tesseract/wiki
+- In this folder run `py -m pip install -r requirements.txt`.
+- Start with `py app.py` or double-click `start_collector.bat`.
 
-Install dependencies:
+## How to scan
 
-```bat
-py -m pip install -r requirements.txt
-```
+1. Open Minecraft and the server's `/prestige` menu.
+2. Open the collector.
+3. Put the mouse at the **center of the top-left slot** and press F8.
+4. Put the mouse at the **center of the bottom-right Next arrow** and press F8 again.
+5. Set hover delay to 0.4–0.6 seconds; increase it if tooltips are missed.
+6. Start automatic scan. Keep Minecraft visible and do not use the mouse while scanning.
+7. Stop at any time. Progress is saved in `prestige_prices.json`.
 
-Install Tesseract OCR from https://github.com/UB-Mannheim/tesseract/wiki if it is not already installed.
+The scanner uses the whole desktop for OCR, so Minecraft must remain visible. PyAutoGUI's emergency stop is triggered by moving the mouse to the top-left screen corner.
 
-Run:
+## Accuracy notes
 
-```bat
-py app.py
-```
+OCR depends on screen resolution, GUI scale, tooltip contrast, and hover delay. Check the OCR panel and several saved records during a short test before leaving a long scan. Pagination ends when the calibrated Next click produces no visible change in the menu grid. If the server layout changes, the 9×6 assumption must be updated. Only explicit tooltip prices are saved; unreadable values remain missing.
 
-## Price data format
+## JSON format
 
-The exported JSON remains compatible with the mod's price database:
-
-```json
-{
-  "prices": [
-    {
-      "rebirth": 24,
-      "prestige": 1142,
-      "individualCost": "$11.880T",
-      "cumulativeSpent": "44.860qt"
-    }
-  ],
-  "priceCount": 1,
-  "pagesScanned": 1
-}
-```
-
-The bracketed cumulative amount in the server tooltip is stored separately; it is not treated as the individual price.
-
-## Safety and accuracy
-
-- The collector reads the visible screen; it does not inject code into Minecraft.
-- Only observed price text is saved.
-- Duplicate (rebirth, prestige) records are updated rather than duplicated.
-- Unreadable or missing prices are reported for review.
+The export matches the mod's `prestige_prices.json` format, with `prices`, `priceCount`, and `pagesScanned`. Each record contains `rebirth`, `prestige`, `individualCost`, and `cumulativeSpent`.
