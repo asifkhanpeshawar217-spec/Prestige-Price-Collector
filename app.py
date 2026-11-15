@@ -1,5 +1,5 @@
 from __future__ import annotations
-import json, re, threading, time, tkinter as tk
+import json, os, re, sys, threading, time, tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 from typing import Optional
@@ -40,11 +40,22 @@ def parse_tooltip(text, current_rb):
     return record, current_rb
 
 def setup_tesseract():
-    for p in (Path(r"C:\Program Files\Tesseract-OCR\tesseract.exe"),
-              Path(r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe")):
+    # In the packaged EXE, Tesseract and its English OCR data are bundled
+    # beside the application inside PyInstaller's temporary extraction folder.
+    if getattr(sys, "frozen", False):
+        bundle = Path(sys._MEIPASS) / "tesseract"
+        exe = bundle / "tesseract.exe"
+        if exe.exists():
+            pytesseract.pytesseract.tesseract_cmd = str(exe)
+            os.environ["TESSDATA_PREFIX"] = str(bundle)
+            return
+
+    # Development fallback when running app.py directly.
+    for p in (Path(r"C:\\Program Files\\Tesseract-OCR\\tesseract.exe"),
+              Path(r"C:\\Program Files (x86)\\Tesseract-OCR\\tesseract.exe")):
         if p.exists():
             pytesseract.pytesseract.tesseract_cmd = str(p)
-            break
+            return
 
 class App:
     def __init__(self, root):
