@@ -23,7 +23,7 @@ OUTPUT_FILE = "prestige_prices.json"
 # Rebirth 24 Prestige 1142
 # Cost: $11.880 [44.860qt]
 PRICE_RE = re.compile(
-    r"Cost\s*:\s*\$\s*([0-9][0-9,]*(?:\.[0-9]+)?)\s*([TQ]?|QT)?",
+    r"Cost\s*:\s*\$\s*([0-9][0-9,]*(?:\.[0-9]+)?)\s*(QT|T|Q)?",
     re.IGNORECASE,
 )
 REBIRTH_RE = re.compile(r"Rebirth\s*(\d+)", re.IGNORECASE)
