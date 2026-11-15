@@ -59,6 +59,7 @@ class App:
         self.first = None
         self.last = None
         self.capture_request = None
+        self.armed_target = None
         self.stop_event = threading.Event()
         self.worker = None
         self.delay = tk.StringVar(value="0.4")
@@ -120,11 +121,11 @@ class App:
 
     def on_key(self, key):
         if key == keyboard.Key.f8:
-            self.capture_request = "hotkey"
+            self.capture_request = self.armed_target or "hotkey"
 
     def arm(self, target):
-        self.capture_request = target
-        self.status.set("Move the mouse onto the requested Minecraft slot, then press F8.")
+        self.armed_target = target
+        self.status.set("Move the mouse onto the requested Minecraft slot, then press F8 to capture it.")
 
     def process_capture(self):
         req = self.capture_request
@@ -133,6 +134,7 @@ class App:
             if req == "hotkey":
                 req = "first" if self.first is None else ("last" if self.last is None else None)
             if req:
+                self.armed_target = None
                 pos = tuple(map(int, pyautogui.position()))
                 if req == "first":
                     self.first = pos; self.first_text.set(str(pos))
@@ -251,7 +253,7 @@ class App:
             self.set_status("Scan stopped: " + str(e))
         finally:
             self.save_silent()
-            self.set_status(self.status.get() + " | Progress saved to prestige_prices.json.")
+            self.set_status("Scan stopped. Progress saved to prestige_prices.json.")
 
     def payload(self):
         vals = sorted(self.records.values(),key=lambda v:(v["rebirth"],v["prestige"]))
